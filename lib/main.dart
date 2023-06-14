@@ -68,15 +68,18 @@ class _PostListViewState extends State<PostListView> {
         _isLoading = true;
       });
 
+      // final url =
+      //     'https://jsonplaceholder.typicode.com/photos?_page=$_page&_limit=10';
       final url =
-          'https://jsonplaceholder.typicode.com/photos?_page=$_page&_limit=10';
+          'https://scrolltolearn.onrender.com/api/posts?page=$_page&limit=10';
+      print(url);
       final response = await http.get(Uri.parse(url));
-
+      print(response);
       if (response.statusCode == 200) {
         final List<dynamic> responseData = jsonDecode(response.body);
         final List<Post> fetchedPosts = responseData.map((data) {
           return Post(
-            imageUrl: data['url'],
+            imageUrl: data['imageUrl'],
             text: data['title'],
           );
         }).toList();
@@ -89,7 +92,8 @@ class _PostListViewState extends State<PostListView> {
       } else {
         print('Error fetching posts. Status code: ${response.statusCode}');
       }
-    }
+    } else
+      print("hello");
   }
 
   @override
