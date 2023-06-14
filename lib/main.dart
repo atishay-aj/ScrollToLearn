@@ -42,6 +42,7 @@ class _PostListViewState extends State<PostListView> {
   ScrollController _scrollController = ScrollController();
   int _page = 1;
   bool _isLoading = false;
+  bool _hasMorePosts = true;
 
   @override
   void initState() {
@@ -51,7 +52,9 @@ class _PostListViewState extends State<PostListView> {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent) {
-        fetchPosts();
+        if (_hasMorePosts) {
+          fetchPosts();
+        }
       }
     });
   }
@@ -63,18 +66,15 @@ class _PostListViewState extends State<PostListView> {
   }
 
   void fetchPosts() async {
-    if (!_isLoading) {
+    if (!_isLoading && _hasMorePosts) {
       setState(() {
         _isLoading = true;
       });
 
-      // final url =
-      //     'https://jsonplaceholder.typicode.com/photos?_page=$_page&_limit=10';
       final url =
           'https://scrolltolearn.onrender.com/api/posts?page=$_page&limit=10';
-      print(url);
       final response = await http.get(Uri.parse(url));
-      print(response);
+
       if (response.statusCode == 200) {
         final List<dynamic> responseData = jsonDecode(response.body);
         final List<Post> fetchedPosts = responseData.map((data) {
@@ -88,12 +88,14 @@ class _PostListViewState extends State<PostListView> {
           posts.addAll(fetchedPosts);
           _page++;
           _isLoading = false;
+          if (fetchedPosts.length < 10) {
+            _hasMorePosts = false;
+          }
         });
       } else {
         print('Error fetching posts. Status code: ${response.statusCode}');
       }
-    } else
-      print("hello");
+    }
   }
 
   @override
