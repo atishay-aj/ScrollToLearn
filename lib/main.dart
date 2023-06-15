@@ -145,46 +145,82 @@ class PostWidget extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 200.0,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
-              image: DecorationImage(
-                  image: NetworkImage(post.imageUrl), fit: BoxFit.fill),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              post.text,
-              style: TextStyle(
-                fontSize: 16.0,
-                fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return ImagePopup(imageUrl: post.imageUrl);
+            },
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 200.0,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
+                image: DecorationImage(
+                  image: NetworkImage(post.imageUrl),
+                  fit: BoxFit.fill,
+                ),
               ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                icon: Icon(Icons.favorite_border),
-                onPressed: () {
-                  // Handle like button pressed
-                },
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                post.text,
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              IconButton(
-                icon: Icon(Icons.bookmark_border),
-                onPressed: () {
-                  // Handle save button pressed
-                },
-              ),
-            ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.favorite_border),
+                  onPressed: () {
+                    // Handle like button pressed
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.bookmark_border),
+                  onPressed: () {
+                    // Handle save button pressed
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ImagePopup extends StatelessWidget {
+  final String imageUrl;
+
+  ImagePopup({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        child: InteractiveViewer(
+          panEnabled: true,
+          minScale: 0.5,
+          maxScale: 2.5,
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
           ),
-        ],
+        ),
       ),
     );
   }
