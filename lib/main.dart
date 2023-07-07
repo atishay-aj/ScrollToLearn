@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 void main() {
   runApp(ScrollToLearnApp());
@@ -145,81 +147,101 @@ class PostWidget extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: InkWell(
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return ImagePopup(imageUrl: post.imageUrl);
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return ImagePopup(
+                    imageUrls: [post.imageUrl],
+                  );
+                },
+              );
             },
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
+            child: Container(
               height: 200.0,
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
                 image: DecorationImage(
                   image: NetworkImage(post.imageUrl),
-                  fit: BoxFit.fill,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Text(
-                post.text,
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
-                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              post.text,
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.favorite_border),
-                  onPressed: () {
-                    // Handle like button pressed
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.bookmark_border),
-                  onPressed: () {
-                    // Handle save button pressed
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                icon: Icon(Icons.favorite_border),
+                onPressed: () {
+                  // Handle like button pressed
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.bookmark_border),
+                onPressed: () {
+                  // Handle save button pressed
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
 class ImagePopup extends StatelessWidget {
-  final String imageUrl;
+  final List<String> imageUrls;
+  final int initialPage;
 
-  ImagePopup({required this.imageUrl});
+  ImagePopup({required this.imageUrls, this.initialPage = 0});
 
   @override
   Widget build(BuildContext context) {
+    final PageController pageController =
+        PageController(initialPage: initialPage);
+
     return Dialog(
+      insetPadding: EdgeInsets.zero,
       child: Container(
         width: MediaQuery.of(context).size.width,
-        child: InteractiveViewer(
-          panEnabled: true,
-          minScale: 0.5,
-          maxScale: 2.5,
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain,
+        height: MediaQuery.of(context).size.height,
+        child: PhotoViewGallery.builder(
+          itemCount: imageUrls.length,
+          pageController: pageController,
+          builder: (context, index) {
+            return PhotoViewGalleryPageOptions(
+              imageProvider: NetworkImage(imageUrls[index]),
+              minScale: PhotoViewComputedScale.contained,
+              maxScale: PhotoViewComputedScale.covered * 2,
+            );
+          },
+          scrollPhysics: const BouncingScrollPhysics(),
+          backgroundDecoration: BoxDecoration(
+            color: Colors.black,
           ),
+          loadingBuilder: (context, event) {
+            if (event == null) return Container();
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          },
         ),
       ),
     );
