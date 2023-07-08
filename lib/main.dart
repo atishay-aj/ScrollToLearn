@@ -3,38 +3,112 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:provider/provider.dart';
+import 'package:ionicons/ionicons.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 void main() {
   runApp(ScrollToLearnApp());
 }
 
+List<String> categories = []; // Store the fetched categories globally
+
+Future<List<String>> fetchCategories() async {
+  final response = await http
+      .get(Uri.parse('https://scrolltolearn.onrender.com/allcategories'));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> json = jsonDecode(response.body);
+    categories = json.map((category) => category['name'] as String).toList();
+    return categories;
+  } else {
+    throw Exception('Failed to load categories');
+  }
+}
+
+Future<void> fetchAndSetCategories(CategoryProvider categoryProvider) async {
+  final fetchedCategories = await fetchCategories();
+  categoryProvider.setCategories(fetchedCategories);
+}
+
+class CategoryProvider with ChangeNotifier {
+  String _selectedCategory = 'All';
+  List<String> _categories = [];
+
+  String get selectedCategory => _selectedCategory;
+  List<String> get categories => _categories;
+
+  void setSelectedCategory(String category) {
+    print(category);
+    _selectedCategory = category;
+    notifyListeners();
+  }
+
+  void setCategories(List<String> categories) {
+    _categories = categories;
+    notifyListeners();
+  }
+}
+
 class ScrollToLearnApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Scroll To Learn',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: HomePage(),
-    );
+    return ChangeNotifierProvider<CategoryProvider>(
+        create: (_) => CategoryProvider(),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Scroll To Learn',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+          ),
+          home: HomePage(),
+        ));
   }
 }
 
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final categoryProvider =
+        Provider.of<CategoryProvider>(context, listen: false);
+    fetchAndSetCategories(categoryProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text('Scroll To Learn'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              // Add your filter logic here
-              print('Filter icon pressed');
+          Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, _) {
+              return IconButton(
+                icon: Icon(Ionicons.options),
+                onPressed: () {
+                  // Show the category filter dropdown
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Select Category'),
+                        content: DropdownButton<String>(
+                          value: categoryProvider.selectedCategory,
+                          onChanged: (String? newValue) {
+                            categoryProvider
+                                .setSelectedCategory(newValue ?? '');
+                            Navigator.of(context).pop();
+                          },
+                          items: categoryProvider.categories
+                              .map<DropdownMenuItem<String>>((String category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
             },
           ),
         ],
@@ -55,6 +129,7 @@ class _PostListViewState extends State<PostListView> {
   int _page = 1;
   bool _isLoading = false;
   bool _hasMorePosts = true;
+  String _selectedCategory = 'All';
 
   @override
   void initState() {
@@ -77,14 +152,35 @@ class _PostListViewState extends State<PostListView> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final categoryProvider = Provider.of<CategoryProvider>(context);
+    if (categoryProvider.selectedCategory != _selectedCategory) {
+      _selectedCategory = categoryProvider.selectedCategory;
+      resetPosts();
+    }
+  }
+
+  void resetPosts() {
+    setState(() {
+      posts.clear();
+      _page = 1;
+      _isLoading = false;
+      _hasMorePosts = true;
+    });
+    fetchPosts();
+  }
+
   void fetchPosts() async {
+    print("here calling hurray");
     if (!_isLoading && _hasMorePosts) {
       setState(() {
         _isLoading = true;
       });
 
       final url =
-          'https://scrolltolearn.onrender.com/api/posts?page=$_page&limit=10';
+          'https://scrolltolearn.onrender.com/api/posts?page=$_page&limit=10&category=$_selectedCategory';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -112,6 +208,7 @@ class _PostListViewState extends State<PostListView> {
 
   @override
   Widget build(BuildContext context) {
+    print(posts.length);
     return ListView.builder(
       controller: _scrollController,
       itemCount: posts.length + 1,
@@ -176,10 +273,12 @@ class PostWidget extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
-                image: DecorationImage(
-                  image: NetworkImage(post.imageUrl),
-                  fit: BoxFit.fill,
-                ),
+              ),
+              child: CachedNetworkImage(
+                imageUrl: post.imageUrl,
+                fit: BoxFit.fill,
+                errorWidget: (context, url, error) => Icon(Icons.error),
+                cacheManager: DefaultCacheManager(),
               ),
             ),
           ),
@@ -237,7 +336,7 @@ class ImagePopup extends StatelessWidget {
           pageController: pageController,
           builder: (context, index) {
             return PhotoViewGalleryPageOptions(
-              imageProvider: NetworkImage(imageUrls[index]),
+              imageProvider: CachedNetworkImageProvider(imageUrls[index]),
               minScale: PhotoViewComputedScale.contained,
               maxScale: PhotoViewComputedScale.covered * 2,
             );
