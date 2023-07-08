@@ -12,6 +12,7 @@ class ScrollToLearnApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Scroll To Learn',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -28,6 +29,15 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Scroll To Learn'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: () {
+              // Add your filter logic here
+              print('Filter icon pressed');
+            },
+          ),
+        ],
       ),
       body: PostListView(),
     );
@@ -168,7 +178,7 @@ class PostWidget extends StatelessWidget {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(8.0)),
                 image: DecorationImage(
                   image: NetworkImage(post.imageUrl),
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 ),
               ),
             ),
