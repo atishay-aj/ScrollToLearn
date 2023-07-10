@@ -180,6 +180,7 @@ class HomePage extends StatelessWidget {
     final categoryProvider =
         Provider.of<CategoryProvider>(context, listen: false);
     fetchAndSetCategories(categoryProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Scroll To Learn'),
@@ -218,6 +219,49 @@ class HomePage extends StatelessWidget {
             },
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Welcome',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  // Text(
+                  //   'User Name',
+                  //   style: TextStyle(
+                  //     color: Colors.white,
+                  //     fontSize: 16,
+                  //   ),
+                  // ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Logout'),
+              onTap: () {
+                final tokenProvider =
+                    Provider.of<TokenProvider>(context, listen: false);
+                tokenProvider.saveToken('');
+                Navigator.of(context).pop(); // Close the drawer
+              },
+            ),
+          ],
+        ),
       ),
       body: PostListView(),
     );
